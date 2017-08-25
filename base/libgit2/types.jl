@@ -1141,8 +1141,11 @@ Retains state between multiple calls to the credential callback. A single
 instances will be used when the URL has changed.
 """
 mutable struct CredentialPayload <: Payload
-    credential::Nullable{AbstractCredentials}
+    explicit::Nullable{AbstractCredentials}
     cache::Nullable{CachedCredentials}
+
+    # Ephemeral state fields
+    credential::Nullable{AbstractCredentials}
     first_pass::Bool
     scheme::String
     username::String
@@ -1150,7 +1153,8 @@ mutable struct CredentialPayload <: Payload
     path::String
 
     function CredentialPayload(credential::Nullable{<:AbstractCredentials}, cache::Nullable{CachedCredentials})
-        new(credential, cache, true, "", "", "", "")
+        payload = new(credential, cache)
+        return reset!(payload)
     end
 end
 
@@ -1164,4 +1168,21 @@ end
 
 function CredentialPayload()
     CredentialPayload(Nullable{AbstractCredentials}(), Nullable{CachedCredentials}())
+end
+
+"""
+    reset!(payload) -> CredentialPayload
+
+Reset the `payload` state back to the initial values so that it can be used again within
+the credential callback.
+"""
+function reset!(p::CredentialPayload)
+    p.credential = Nullable{AbstractCredentials}()
+    p.first_pass = true
+    p.scheme = ""
+    p.username = ""
+    p.host = ""
+    p.path = ""
+
+    return p
 end
